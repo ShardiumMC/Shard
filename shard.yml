@@ -1,0 +1,13 @@
+name: shard
+version: 0.1.0
+
+authors:
+  - Tom <eztxmmc@hotmail.com>
+
+targets:
+  shard:
+    main: src/shard.cr
+
+crystal: '>= 1.18.0'
+
+license: MIT

@@ -1,0 +1,30 @@
+# Crystal
+/.crystal/
+ /bin/
+/lib/
+/.shards/
+*.dwarf
+*.o
+*.dSYM/
+
+# Docs
+/docs/
+
+# Editors / IDEs
+.vscode/
+.idea/
+*.iml
+*.iws
+*.ipr
+workspace.xml
+
+# OS / editor temp files
+.DS_Store
+Thumbs.db
+*~ 
+*.swp
+*.ps1
+
+# Temp / logs
+tmp/
+log/
