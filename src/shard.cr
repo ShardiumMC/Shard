@@ -1,5 +1,6 @@
 require "socket"
 require "json"
+require "./motd_handler"
 
 module Shard
   VERSION = "0.1.0"
@@ -15,7 +16,10 @@ module Shard
   end
 
   def self.handle_client(client : TCPSocket)
+    start_time = Time.monotonic
     puts "New connection: #{client.remote_address}"
+
+    # Read handshake packet
     packet_length = read_varint(client)
     packet_id = read_varint(client)
     protocol_version = read_varint(client)
@@ -27,7 +31,11 @@ module Shard
     next_state = read_varint(client)
 
     if next_state == 1
+      # Status request
       send_status_response(client)
+
+      # Wait for ping request
+      handle_ping_pong(client, start_time)
     else
       client.puts "Login not supported currently"
     end
@@ -38,13 +46,9 @@ module Shard
   end
 
   def self.send_status_response(client : TCPSocket)
-    motd = {
-      "version" => { "name" => "Shard 0.1.0", "protocol" => 760 },
-      "players" => { "max" => 20, "online" => 0 },
-      "description" => { "text" => "Shard Crystal Server" }
-    }
-
-    json_str = motd.to_json
+    # Use the MOTD handler to generate the response
+    json_str = MOTDHandler.generate_status_json
+    puts "Sending status JSON: #{json_str}"
     json_bytes = json_str.to_slice
 
     # Build packet: packet_id (0) + string_length + string_data
@@ -56,6 +60,30 @@ module Shard
     packet_data = io.to_slice
     client.write(encode_varint(packet_data.size.to_i32))
     client.write(packet_data)
+  end
+
+  def self.handle_ping_pong(client : TCPSocket, start_time : Time::Span)
+    # Read ping packet
+    ping_length = read_varint(client)
+    ping_id = read_varint(client)
+
+    # Read the 8-byte payload (long timestamp)
+    payload = Bytes.new(8)
+    client.read(payload)
+
+    # Send pong response with same payload
+    io = IO::Memory.new
+    io.write(encode_varint(1))  # Packet ID for pong
+    io.write(payload)
+
+    pong_data = io.to_slice
+    client.write(encode_varint(pong_data.size.to_i32))
+    client.write(pong_data)
+
+    # Calculate and display latency
+    elapsed = Time.monotonic - start_time
+    latency_ms = (elapsed.total_milliseconds).round.to_i
+    puts "Online #{client.remote_address} - #{latency_ms} ms"
   end
 
 

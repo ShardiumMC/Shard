@@ -28,3 +28,8 @@ Thumbs.db
 # Temp / logs
 tmp/
 log/
+
+# Windows binaries
+*.dll
+*.exe
+*.pdb
